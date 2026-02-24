@@ -1,0 +1,1416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Food for All — Feed Those in Need</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+
+   /* FOOD FOR ALL — ANIMATED STYLESHEET
+   Aesthetic: Warm-organic editorial
+   Fonts: DM Serif Display + DM Sans */
+
+/* ── CSS Variables ── */
+:root {
+  --green:     #4d8468;
+  --green-mid: #141615;
+  --green-lt:  #3d9966;
+  --amber:     #484644;
+  --amber-lt:  #2d2e2b;
+  --cream:     #fdf6ec;
+  --cream-dk:  #f0e4cc;
+  --brown:     #5c3d1e;
+  --text:      #1a1a1a;
+  --muted:     #7a7060;
+  --white:     #ffffff;
+  --red:       #dc2626;
+  --radius:    14px;
+  --shadow:    0 4px 24px rgba(0,0,0,0.09);
+  --shadow-lg: 0 12px 48px rgba(0,0,0,0.14);
+  --ease:      cubic-bezier(0.16,1,0.3,1);
+}
+
+/* ── Reset ── */
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--cream);
+  color: var(--text);
+  overflow-x: hidden;
+}
+a { text-decoration: none; color: inherit; }
+img { max-width:100%; display:block; }
+
+/* ── Noise overlay ── */
+.noise-overlay {
+  position: fixed; inset:0; pointer-events:none; z-index:9999;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  opacity: 0.4;
+}
+   /* NAVBAR.... */
+.navbar {
+  position: fixed; top:0; left:0; right:0; z-index:1000;
+  padding: 0 2rem;
+  background: transparent;
+  transition: background 0.35s var(--ease), box-shadow 0.35s var(--ease), padding 0.35s var(--ease);
+}
+.navbar.scrolled {
+  background: rgba(253,246,236,0.92);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 1px 0 rgba(0,0,0,0.08), var(--shadow);
+  padding: 0 2rem;
+}
+.nav-inner {
+  max-width: 1200px; margin:0 auto;
+  display: flex; align-items:center;
+  height: 68px;
+}
+.logo {
+  display: flex; align-items:center; gap:.5rem;
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.4rem;
+  color: var(--white);
+  transition: color 0.3s;
+  margin-right: auto;
+}
+.navbar.scrolled .logo { color: var(--green); }
+.logo-icon { font-size:1.5rem; }
+.logo em { font-style:italic; color: var(--amber-lt); }
+
+.nav-links {
+  display: flex; list-style:none; gap:2rem;
+  margin-right: 2rem;
+}
+.nl {
+  font-size: .92rem; font-weight:500;
+  color: rgba(255,255,255,0.82);
+  position: relative; padding-bottom:2px;
+  transition: color 0.2s;
+}
+.navbar.scrolled .nl { color: var(--muted); }
+.nl::after {
+  content:''; position:absolute; bottom:0; left:0;
+  width:0; height:2px; background: var(--amber);
+  transition: width 0.28s var(--ease);
+  border-radius:99px;
+}
+.nl:hover::after, .nl.active::after { width:100%; }
+.nl:hover, .nl.active { color: var(--white); }
+.navbar.scrolled .nl:hover, .navbar.scrolled .nl.active { color: var(--green); }
+
+.nav-cta {
+  padding: 9px 20px;
+  background: var(--amber);
+  color: var(--white);
+  border-radius: 99px;
+  font-size: .88rem; font-weight:700;
+  transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 4px 14px rgba(75, 54, 20, 0.38);
+}
+.nav-cta:hover { background: var(--amber-lt); transform: translateY(-1px); box-shadow: 0 6px 20px rgba(232,147,10,.5); }
+
+.burger { display:none; flex-direction:column; gap:5px; background:none; border:none; cursor:pointer; padding:4px; }
+.burger span { display:block; width:24px; height:2px; background:var(--white); border-radius:99px; transition: all .3s; }
+.navbar.scrolled .burger span { background: var(--green); }
+   /* HERO........ */
+.hero {
+  position: relative;
+  min-height: 100vh;
+  background: linear-gradient(145deg, var(--green) 0%, #334b4c 55%, #1a2e1a 100%);
+  display: flex; align-items:center; justify-content:center;
+  overflow: hidden;
+  padding: 120px 2rem 80px;
+}
+#heroCanvas {
+  position:absolute; inset:0; width:100%; height:100%;
+  pointer-events:none;
+}
+.hero-bg-circles { position:absolute; inset:0; overflow:hidden; pointer-events:none; }
+.hbc {
+  position:absolute; border-radius:50%;
+  background: rgba(255,255,255,0.04);
+  animation: hbc-float 8s ease-in-out infinite;
+}
+.hbc1 { width:600px; height:600px; top:-200px; right:-150px; animation-delay:0s; }
+.hbc2 { width:400px; height:400px; bottom:-100px; left:-100px; animation-delay:-3s; }
+.hbc3 { width:250px; height:250px; top:40%; right:15%; animation-delay:-5s; }
+@keyframes hbc-float {
+  0%,100% { transform: translateY(0) scale(1); }
+  50%      { transform: translateY(-30px) scale(1.05); }
+}
+
+.hero-content {
+  position:relative; z-index:1;
+  max-width: 680px; text-align:center;
+}
+.hero-pill {
+  display: inline-flex; align-items:center;
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.22);
+  color: rgba(255,255,255,0.9);
+  font-size: .82rem; font-weight:600; letter-spacing:.05em;
+  padding: 6px 16px; border-radius:99px;
+  margin-bottom:1.2rem;
+  backdrop-filter: blur(8px);
+}
+.hero-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: clamp(2.6rem, 6vw, 4.4rem);
+  line-height: 1.1;
+  color: var(--white);
+  margin-bottom: 1.2rem;
+}
+.hero-title em {
+  font-style:italic;
+  background: linear-gradient(90deg, var(--amber-lt), var(--amber));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.hero-sub {
+  font-size: 1.08rem; color: rgba(255,255,255,0.68);
+  line-height: 1.7; margin-bottom: 2rem;
+}
+.hero-actions {
+  display: flex; gap:1rem; justify-content:center; flex-wrap:wrap;
+  margin-bottom:2.5rem;
+}
+.btn-primary {
+  display:inline-flex; align-items:center; gap:.4rem;
+  padding: 13px 28px;
+  background: linear-gradient(135deg, var(--amber-lt), var(--amber));
+  color: var(--white);
+  border:none; border-radius:99px;
+  font-family:'DM Sans',sans-serif; font-size:.96rem; font-weight:700;
+  cursor:pointer;
+  box-shadow: 0 6px 24px rgba(232,147,10,.45);
+  transition: transform 0.2s var(--ease), box-shadow 0.2s;
+}
+.btn-primary:hover { transform: translateY(-2px) scale(1.03); box-shadow: 0 10px 32px rgba(232,147,10,.55); }
+.btn-ghost {
+  display:inline-flex; align-items:center; gap:.4rem;
+  padding: 13px 28px;
+  background: rgba(255,255,255,0.1);
+  color: rgba(255,255,255,.9);
+  border: 1.5px solid rgba(255,255,255,.28);
+  border-radius:99px;
+  font-family:'DM Sans',sans-serif; font-size:.96rem; font-weight:600;
+  cursor:pointer; backdrop-filter:blur(8px);
+  transition: background 0.2s, transform 0.2s;
+}
+.btn-ghost:hover { background: rgba(255,255,255,0.18); transform: translateY(-1px); }
+
+.hero-stats {
+  display: flex; align-items:center; justify-content:center; gap:2rem;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.14);
+  border-radius: 16px; padding: 18px 32px;
+  backdrop-filter: blur(12px);
+}
+.hs { text-align:center; }
+.hs-num {
+  display:block; font-family:'DM Serif Display',serif;
+  font-size:1.9rem; color:var(--white); line-height:1;
+}
+.hs-label { font-size:.78rem; color:rgba(255,255,255,.55); letter-spacing:.05em; margin-top:3px; display:block; }
+.hs-div { width:1px; height:36px; background:rgba(255,255,255,.18); }
+
+.hero-scroll-hint {
+  position:absolute; bottom:28px; left:50%; transform:translateX(-50%);
+  display:flex; flex-direction:column; align-items:center; gap:6px;
+  color:rgba(255,255,255,.4); font-size:.72rem; letter-spacing:.1em;
+}
+.scroll-dot {
+  width:6px; height:6px; border-radius:50%;
+  background:rgba(255,255,255,.5);
+  animation: scroll-bounce 2s ease-in-out infinite;
+}
+@keyframes scroll-bounce {
+  0%,100% { transform:translateY(0); opacity:1; }
+  50%      { transform:translateY(8px); opacity:.4; }
+}
+   /* IMPACT TICKER........ */
+.impact-bar {
+  background: var(--green);
+  overflow: hidden;
+  padding: 10px 0;
+}
+.impact-ticker {
+  display: flex; gap: 4rem;
+  animation: ticker 30s linear infinite;
+  white-space: nowrap;
+}
+.impact-ticker span {
+  font-size: .82rem; font-weight:500;
+  color: rgba(255,255,255,.82);
+  flex-shrink:0;
+}
+@keyframes ticker { 0% { transform:translateX(0); } 100% { transform:translateX(-50%); } }
+
+
+   /* SECTION..... */
+.section { padding: 90px 2rem; }
+.section-alt { background: var(--cream-dk); }
+.container { max-width:1200px; margin:0 auto; }
+
+.section-head { text-align:center; margin-bottom:3rem; }
+.section-tag {
+  display:inline-block;
+  font-size:.78rem; font-weight:700; letter-spacing:.08em;
+  color: var(--green-mid);
+  background: rgba(45,122,82,.1);
+  border: 1px solid rgba(45,122,82,.2);
+  padding: 5px 14px; border-radius:99px;
+  margin-bottom:.9rem;
+}
+.section-title {
+  font-family:'DM Serif Display',serif;
+  font-size: clamp(2rem, 4vw, 2.8rem);
+  color: var(--green);
+  margin-bottom:.7rem;
+}
+.section-sub { font-size:1rem; color:var(--muted); max-width:480px; margin:0 auto; }
+
+   /* FORM........ */
+.form-wrap {
+  max-width:680px; margin:0 auto;
+  background:var(--white);
+  border-radius:20px;
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--cream-dk);
+  overflow:hidden;
+}
+
+/* Steps */
+.steps {
+  display:flex; align-items:center;
+  padding:24px 32px;
+  background: linear-gradient(135deg, var(--green), var(--green-mid));
+}
+.step {
+  display:flex; align-items:center; gap:8px;
+  transition: opacity .3s;
+}
+.step:not(.active) { opacity:.45; }
+.step-num {
+  width:28px; height:28px; border-radius:50%;
+  background:rgba(255,255,255,.18);
+  border:2px solid rgba(255,255,255,.4);
+  color:var(--white); font-size:.82rem; font-weight:700;
+  display:flex; align-items:center; justify-content:center;
+  transition: background .3s, border-color .3s;
+}
+.step.active .step-num { background:var(--amber); border-color:var(--amber); }
+.step.done .step-num { background:#22c55e; border-color:#22c55e; }
+.step-label { font-size:.82rem; font-weight:600; color:rgba(255,255,255,.85); }
+.step-line { flex:1; height:2px; background:rgba(255,255,255,.2); margin:0 12px; }
+
+/* Form pages */
+form { padding:32px; }
+.form-page { display:none; animation:fadeSlide .35s var(--ease); }
+.form-page.active { display:block; }
+@keyframes fadeSlide {
+  from { opacity:0; transform:translateX(20px); }
+  to   { opacity:1; transform:translateX(0); }
+}
+.form-grid { display:grid; grid-template-columns:1fr 1fr; gap:1.2rem; }
+.fg { display:flex; flex-direction:column; }
+.fg-full { grid-column:1/-1; }
+.fg label {
+  font-size:.82rem; font-weight:600;
+  color: var(--brown); margin-bottom:.45rem;
+}
+.input-wrap { position:relative; }
+.iicon {
+  position:absolute; left:13px; top:50%; transform:translateY(-50%);
+  font-size:.95rem; pointer-events:none; z-index:1;
+}
+textarea ~ .iicon, .input-wrap textarea { padding-top:12px; }
+.input-wrap input,
+.input-wrap select,
+.input-wrap textarea {
+  width:100%; padding:12px 13px 12px 38px;
+  border:2px solid var(--cream-dk);
+  border-radius:10px;
+  font-family:'DM Sans',sans-serif; font-size:.93rem;
+  color:var(--text); background:var(--cream);
+  transition: border-color .2s, box-shadow .2s, background .2s;
+  outline:none; appearance:none;
+}
+.input-wrap textarea { resize:vertical; min-height:80px; }
+.input-wrap input:focus,
+.input-wrap select:focus,
+.input-wrap textarea:focus {
+  border-color: var(--green-mid);
+  background: var(--white);
+  box-shadow: 0 0 0 3px rgba(45,122,82,.12);
+}
+
+.form-nav { display:flex; justify-content:space-between; align-items:center; margin-top:2rem; }
+.form-nav .btn-ghost {
+  color:var(--muted); border-color:rgba(0,0,0,.15);
+  background:transparent;
+}
+.form-nav .btn-ghost:hover { background:var(--cream); }
+
+/* Safety checks */
+.safety-checks { background:var(--cream); border-radius:12px; padding:18px; }
+.safety-title { font-size:.82rem; font-weight:700; color:var(--brown); margin-bottom:12px; }
+.safety-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:.8rem; }
+.sc {
+  display:flex; flex-direction:column; align-items:center; gap:6px;
+  padding:14px 8px; border-radius:10px;
+  border:2px solid var(--cream-dk); background:var(--white);
+  cursor:pointer; font-size:.78rem; font-weight:600; color:var(--muted);
+  text-align:center; transition: all .2s var(--ease);
+  position:relative; overflow:hidden;
+}
+.sc-icon { font-size:1.4rem; }
+.sc-check {
+  position:absolute; top:6px; right:8px;
+  font-size:.7rem; font-weight:800; color:var(--green-mid);
+  opacity:0; transition: opacity .2s;
+}
+.sc.checked {
+  border-color:var(--green-mid); background:#f0fdf4; color:var(--green);
+}
+.sc.checked .sc-check { opacity:1; }
+.sc:hover { transform:translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,.08); }
+
+/* Locate button */
+.btn-locate {
+  display:flex; align-items:center; gap:.5rem;
+  margin-top:1rem; padding:10px 18px;
+  border:2px dashed var(--green-mid);
+  background:rgba(45,122,82,.05); color:var(--green);
+  border-radius:10px; font-size:.88rem; font-weight:600;
+  cursor:pointer; transition: all .2s;
+  position:relative; overflow:hidden;
+}
+.btn-locate:hover { background:rgba(45,122,82,.1); }
+.locate-pulse {
+  width:8px; height:8px; border-radius:50%;
+  background:var(--green); flex-shrink:0;
+  animation: pulse-ring 1.5s ease-in-out infinite;
+}
+@keyframes pulse-ring {
+  0%,100% { box-shadow:0 0 0 0 rgba(45,122,82,.6); }
+  50%      { box-shadow:0 0 0 8px rgba(45,122,82,0); }
+}
+
+.btn-submit { position:relative; min-width:180px; justify-content:center; }
+.btn-submit-loader { display:none; }
+.btn-submit.loading .btn-submit-text { display:none; }
+.btn-submit.loading .btn-submit-loader { display:block; animation: spin .7s linear infinite; }
+@keyframes spin { to { transform:rotate(360deg); } }
+
+   /* FILTER.... */
+.filter-row { display:flex; justify-content:center; gap:.7rem; margin-bottom:2.5rem; flex-wrap:wrap; }
+.fbtn {
+  padding:9px 22px;
+  border:2px solid rgba(45,122,82,.2);
+  background:var(--white); color:var(--muted);
+  border-radius:99px; font-family:'DM Sans',sans-serif;
+  font-size:.86rem; font-weight:600; cursor:pointer;
+  transition: all .2s var(--ease);
+}
+.fbtn:hover { border-color:var(--green-mid); color:var(--green); }
+.fbtn.active {
+  background:var(--green); border-color:var(--green);
+  color:var(--white); box-shadow:0 4px 16px rgba(26,92,58,.3);
+}
+   /* DONATION CARDS */
+.donations-grid {
+  display:grid;
+  grid-template-columns:repeat(auto-fill, minmax(300px,1fr));
+  gap:1.4rem;
+}
+.donation-card {
+  background:var(--white);
+  border-radius:var(--radius);
+  padding:20px 22px;
+  box-shadow:var(--shadow);
+  border:1px solid var(--cream-dk);
+  transition: transform .28s var(--ease), box-shadow .28s;
+  animation: card-in .4s var(--ease) both;
+  position:relative; overflow:hidden;
+}
+.donation-card::before {
+  content:'';
+  position:absolute; left:0; top:0; bottom:0; width:4px;
+  background:linear-gradient(180deg, var(--green-lt), var(--amber));
+  border-radius:4px 0 0 4px;
+}
+.donation-card:hover {
+  transform:translateY(-4px);
+  box-shadow:var(--shadow-lg);
+}
+@keyframes card-in {
+  from { opacity:0; transform:translateY(16px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+.card-header {
+  display:flex; align-items:center; gap:12px; margin-bottom:12px;
+}
+.card-emoji {
+  width:44px; height:44px; border-radius:12px;
+  background:var(--cream); display:flex; align-items:center;
+  justify-content:center; font-size:1.4rem; flex-shrink:0;
+}
+.card-title { font-weight:700; font-size:1rem; color:var(--text); }
+.card-sub { font-size:.82rem; color:var(--muted); margin-top:2px; }
+.card-tags { display:flex; flex-wrap:wrap; gap:.4rem; margin:10px 0; }
+.ctag {
+  font-size:.75rem; font-weight:600; padding:3px 10px;
+  border-radius:99px; white-space:nowrap;
+}
+.ctag-green { background:#dcfce7; color:#16a34a; }
+.ctag-amber { background:#fef3c7; color:#d97706; }
+.ctag-blue  { background:#dbeafe; color:#2563eb; }
+.card-meta { font-size:.8rem; color:var(--muted); display:flex; flex-direction:column; gap:3px; }
+.payment-badge {
+  display:inline-flex; align-items:center; gap:.3rem;
+  background:linear-gradient(135deg,#fbbf24,#f59e0b);
+  color:var(--white); font-size:.78rem; font-weight:700;
+  padding:4px 12px; border-radius:99px; margin-top:8px;
+}
+
+/* skeleton */
+.skeleton {
+  background:linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size:200% 100%;
+  animation:shimmer 1.5s infinite;
+  border-radius:8px; height:20px;
+}
+@keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+   /* MAP.../ */
+.map-container {
+  height:520px; border-radius:20px; overflow:hidden;
+  box-shadow:var(--shadow-lg);
+  border:1px solid var(--cream-dk);
+}
+
+   /* ABOUT... */
+.about-grid {
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(240px,1fr));
+  gap:1.4rem;
+}
+.about-card {
+  background:var(--white);
+  border-radius:var(--radius);
+  padding:28px 24px;
+  box-shadow:var(--shadow);
+  border:1px solid var(--cream-dk);
+  transition: transform .3s var(--ease), box-shadow .3s;
+  text-align:center;
+}
+.about-card:hover { transform:translateY(-5px); box-shadow:var(--shadow-lg); }
+.ac-icon {
+  font-size:2.2rem;
+  width:60px; height:60px; border-radius:16px;
+  background:linear-gradient(135deg, rgba(45,122,82,.12), rgba(232,147,10,.1));
+  display:flex; align-items:center; justify-content:center;
+  margin:0 auto 1rem;
+}
+.about-card h3 {
+  font-family:'DM Serif Display',serif;
+  font-size:1.15rem; color:var(--green); margin-bottom:.6rem;
+}
+.about-card p { font-size:.9rem; color:var(--muted); line-height:1.7; }
+
+   /* FOOTER... */
+.footer {
+  background:linear-gradient(135deg, var(--green) 0%, #0e3d24 100%);
+  color:var(--white); padding:48px 2rem 28px;
+}
+.footer-inner {
+  display:flex; flex-direction:column; align-items:center;
+  gap:1.5rem; text-align:center;
+}
+.footer-brand { display:flex; flex-direction:column; align-items:center; gap:.4rem; }
+.footer-name {
+  font-family:'DM Serif Display',serif; font-size:1.6rem;
+}
+.footer-name em { font-style:italic; color:var(--amber-lt); }
+.footer-brand p { font-size:.85rem; color:rgba(255,255,255,.5); margin-top:4px; }
+.footer-links { display:flex; gap:1.5rem; }
+.footer-links a { font-size:.88rem; color:rgba(255,255,255,.6); transition:color .2s; }
+.footer-links a:hover { color:var(--amber-lt); }
+.footer-copy { font-size:.78rem; color:rgba(255,255,255,.3); }
+
+
+   /* MODAL... */
+.modal-overlay {
+  display:none; position:fixed; inset:0; z-index:5000;
+  background:rgba(10,30,15,.7); backdrop-filter:blur(8px);
+  align-items:center; justify-content:center;
+  animation:modal-bg-in .3s ease;
+}
+.modal-overlay.open { display:flex; }
+@keyframes modal-bg-in { from{opacity:0} to{opacity:1} }
+
+.modal-box {
+  background:var(--white);
+  border-radius:24px; padding:40px 36px;
+  max-width:420px; width:90%;
+  text-align:center;
+  box-shadow:0 32px 80px rgba(0,0,0,.3);
+  animation:modal-in .4s var(--ease);
+  position:relative; overflow:hidden;
+}
+@keyframes modal-in {
+  from { opacity:0; transform:scale(.85) translateY(20px); }
+  to   { opacity:1; transform:scale(1) translateY(0); }
+}
+.modal-emoji { font-size:3.5rem; margin-bottom:1rem; display:block; animation:bounce-in .6s var(--ease); }
+@keyframes bounce-in {
+  0%   { transform:scale(0); }
+  60%  { transform:scale(1.2); }
+  100% { transform:scale(1); }
+}
+.modal-box h2 {
+  font-family:'DM Serif Display',serif;
+  font-size:1.8rem; color:var(--green); margin-bottom:.5rem;
+}
+.modal-box p { color:var(--muted); font-size:.94rem; margin-bottom:1.5rem; }
+.modal-meta {
+  display:grid; grid-template-columns:1fr 1fr;
+  gap:.8rem; margin-bottom:1.8rem;
+}
+.mm {
+  background:var(--cream); border-radius:10px; padding:12px;
+  display:flex; flex-direction:column; gap:3px;
+}
+.mm span { font-size:.75rem; color:var(--muted); }
+.mm strong { font-size:1.05rem; color:var(--green); font-weight:700; }
+
+/* Confetti */
+.modal-confetti { position:absolute; inset:0; pointer-events:none; overflow:hidden; }
+.confetti-piece {
+  position:absolute; width:8px; height:8px;
+  border-radius:2px; animation:confetti-fall 2.5s ease-in forwards;
+}
+@keyframes confetti-fall {
+  0%   { transform:translateY(-20px) rotate(0deg); opacity:1; }
+  100% { transform:translateY(500px) rotate(720deg); opacity:0; }
+}
+
+   /* SCROLL REVEAL.... */
+.reveal-up {
+  opacity:0; transform:translateY(30px);
+  transition: opacity .7s var(--ease), transform .7s var(--ease);
+  transition-delay: var(--d, 0s);
+}
+.reveal-up.visible { opacity:1; transform:translateY(0); }
+
+
+   /* RESPONSIVE.......... */
+@media (max-width:768px) {
+  .nav-links, .nav-cta { display:none; }
+  .burger { display:flex; }
+  .hero-stats { flex-direction:column; gap:1rem; padding:16px 20px; }
+  .hs-div { width:40px; height:1px; }
+  .form-grid { grid-template-columns:1fr; }
+  .fg-full { grid-column:1; }
+  .safety-grid { grid-template-columns:1fr; }
+  .steps { padding:16px 20px; }
+  .step-label { display:none; }
+  form { padding:20px; }
+  .donations-grid { grid-template-columns:1fr; }
+  .about-grid { grid-template-columns:1fr; }
+  .modal-meta { grid-template-columns:1fr; }
+  .hero-actions { flex-direction:column; align-items:center; }
+}
+
+@media (max-width:480px) {
+  .hero-title { font-size:2.2rem; }
+  .section-title { font-size:1.8rem; }
+}
+
+</style>
+</head>
+<body>
+
+  <!-- ── Noise overlay ── -->
+  <div class="noise-overlay"></div>
+
+  <!-- ── Navbar ── -->
+  <nav class="navbar" id="navbar">
+    <div class="nav-inner">
+      <a class="logo" href="#home">
+        <span class="logo-icon">🌾</span>
+        <span>Food<em>for</em>All</span>
+      </a>
+      <ul class="nav-links">
+        <li><a href="#home"     class="nl active">Home</a></li>
+        <li><a href="#donate"   class="nl">Donate</a></li>
+        <li><a href="#donations"class="nl">Donations</a></li>
+        <li><a href="#map"      class="nl">Map</a></li>
+        <li><a href="#about"    class="nl">About</a></li>
+      </ul>
+      <a href="#donate" class="nav-cta">Donate Now →</a>
+      <button class="burger" id="burger" aria-label="Menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- ── Hero ── -->
+  <section id="home" class="hero">
+    <canvas id="heroCanvas"></canvas>
+    <div class="hero-bg-circles">
+      <div class="hbc hbc1"></div>
+      <div class="hbc hbc2"></div>
+      <div class="hbc hbc3"></div>
+    </div>
+    <div class="hero-content">
+      <div class="hero-pill reveal-up" style="--d:.0s">🍽️ &nbsp;Zero Hunger Initiative</div>
+      <h1 class="hero-title reveal-up" style="--d:.12s">
+        Turn Surplus<br/><em>Into Smiles</em>
+      </h1>
+      <p class="hero-sub reveal-up" style="--d:.24s">
+        Connect surplus food with roadside communities in real-time.<br/>
+        Every meal shared is a life touched.
+      </p>
+      <div class="hero-actions reveal-up" style="--d:.36s">
+        <a href="#donate" class="btn-primary">🍱 Donate Food</a>
+        <a href="#donations" class="btn-ghost">See Donations →</a>
+      </div>
+      <div class="hero-stats reveal-up" style="--d:.48s">
+        <div class="hs"><span class="hs-num" data-target="3812">0</span><span class="hs-label">Meals Shared</span></div>
+        <div class="hs-div"></div>
+        <div class="hs"><span class="hs-num" data-target="247">0</span><span class="hs-label">Donors</span></div>
+        <div class="hs-div"></div>
+        <div class="hs"><span class="hs-num" data-target="18">0</span><span class="hs-label">Cities</span></div>
+      </div>
+    </div>
+    <div class="hero-scroll-hint">
+      <div class="scroll-dot"></div>
+      <span>Scroll</span>
+    </div>
+  </section>
+
+  <!-- ── Impact Bar ── -->
+  <div class="impact-bar">
+    <div class="impact-ticker">
+      <span>🥗 Dal & Rice donated in Connaught Place</span>
+      <span>🍞 Bread & Pastries shared in Saket</span>
+      <span>🥘 50 servings claimed by Roti Bank</span>
+      <span>🌽 Fresh vegetables listed in Karol Bagh</span>
+      <span>🤝 New NGO partner joined: Aakanksha Foundation</span>
+      <span>🥗 Dal & Rice donated in Connaught Place</span>
+      <span>🍞 Bread & Pastries shared in Saket</span>
+      <span>🥘 50 servings claimed by Roti Bank</span>
+    </div>
+  </div>
+
+  <!-- ── Donate Form ── -->
+  <section id="donate" class="section">
+    <div class="container">
+      <div class="section-head reveal-up">
+        <div class="section-tag">🍱 Make a Difference</div>
+        <h2 class="section-title">List Your Surplus Food</h2>
+        <p class="section-sub">Takes under 2 minutes. Your food reaches someone in need within hours.</p>
+      </div>
+
+      <div class="form-wrap reveal-up" style="--d:.1s">
+        <!-- Step indicator -->
+        <div class="steps">
+          <div class="step active" data-step="1"><span class="step-num">1</span><span class="step-label">Your Info</span></div>
+          <div class="step-line"></div>
+          <div class="step" data-step="2"><span class="step-num">2</span><span class="step-label">Food Details</span></div>
+          <div class="step-line"></div>
+          <div class="step" data-step="3"><span class="step-num">3</span><span class="step-label">Location</span></div>
+        </div>
+
+        <form id="donationForm" novalidate>
+          <!-- Page 1 -->
+          <div class="form-page active" id="fp1">
+            <div class="form-grid">
+              <div class="fg">
+                <label for="donorName">Full Name *</label>
+                <div class="input-wrap">
+                  <span class="iicon">👤</span>
+                  <input type="text" id="donorName" name="donorName" placeholder="Rahul Sharma" required />
+                </div>
+              </div>
+              <div class="fg">
+                <label for="donorEmail">Email *</label>
+                <div class="input-wrap">
+                  <span class="iicon">✉️</span>
+                  <input type="email" id="donorEmail" name="donorEmail" placeholder="rahul@email.com" required />
+                </div>
+              </div>
+              <div class="fg">
+                <label for="donorPhone">Phone *</label>
+                <div class="input-wrap">
+                  <span class="iicon">📱</span>
+                  <input type="tel" id="donorPhone" name="donorPhone" placeholder="+91 98765 43210" required />
+                </div>
+              </div>
+              <div class="fg">
+                <label for="donorType">Donor Type</label>
+                <div class="input-wrap">
+                  <span class="iicon">🏪</span>
+                  <select id="donorType" name="donorType">
+                    <option value="">Select type</option>
+                    <option>Restaurant / Hotel</option>
+                    <option>Grocery Store</option>
+                    <option>Household</option>
+                    <option>Caterer / Event</option>
+                    <option>Office Canteen</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div class="form-nav">
+              <div></div>
+              <button type="button" class="btn-primary" onclick="goStep(2)">Continue →</button>
+            </div>
+          </div>
+
+          <!-- Page 2 -->
+          <div class="form-page" id="fp2">
+            <div class="form-grid">
+              <div class="fg">
+                <label for="foodType">Food Type *</label>
+                <div class="input-wrap">
+                  <span class="iicon">🍛</span>
+                  <select id="foodType" name="foodType" required>
+                    <option value="">Select food type</option>
+                    <option>Cooked Meals</option>
+                    <option>Packed Food</option>
+                    <option>Fruits</option>
+                    <option>Vegetables</option>
+                    <option>Snacks</option>
+                    <option>Bakery Items</option>
+                    <option>Other</option>
+                  </select>
+                </div>
+              </div>
+              <div class="fg">
+                <label for="quantity">Servings *</label>
+                <div class="input-wrap">
+                  <span class="iicon">🍽️</span>
+                  <input type="number" id="quantity" name="quantity" min="1" placeholder="e.g. 50" required />
+                </div>
+              </div>
+              <div class="fg fg-full">
+                <label for="description">Description</label>
+                <div class="input-wrap">
+                  <span class="iicon" style="top:14px">📝</span>
+                  <textarea id="description" name="description" rows="3" placeholder="Tell us about the food — spice level, allergens, packaging…"></textarea>
+                </div>
+              </div>
+              <div class="fg">
+                <label for="expiresIn">Expires In</label>
+                <div class="input-wrap">
+                  <span class="iicon">⏱️</span>
+                  <select id="expiresIn" name="expiresIn">
+                    <option>1 hour</option>
+                    <option>2 hours</option>
+                    <option selected>3 hours</option>
+                    <option>4 hours</option>
+                    <option>6 hours</option>
+                    <option>12 hours</option>
+                    <option>24 hours</option>
+                  </select>
+                </div>
+              </div>
+              <div class="fg">
+                <label for="paymentAmount">Monetary Donation (₹)</label>
+                <div class="input-wrap">
+                  <span class="iicon">💰</span>
+                  <input type="number" id="paymentAmount" name="paymentAmount" min="0" step="1" placeholder="0.00" />
+                </div>
+              </div>
+            </div>
+            <div class="form-nav">
+              <button type="button" class="btn-ghost" onclick="goStep(1)">← Back</button>
+              <button type="button" class="btn-primary" onclick="goStep(3)">Continue →</button>
+            </div>
+          </div>
+
+          <!-- Page 3 -->
+          <div class="form-page" id="fp3">
+            <div class="safety-checks">
+              <p class="safety-title">⚠️ Safety Checklist (tap to confirm)</p>
+              <div class="safety-grid">
+                <div class="sc" onclick="this.classList.toggle('checked')">
+                  <span class="sc-icon">🧼</span>
+                  <span>Hygiene standards met</span>
+                  <span class="sc-check">✓</span>
+                </div>
+                <div class="sc" onclick="this.classList.toggle('checked')">
+                  <span class="sc-icon">🌡️</span>
+                  <span>Proper temperature maintained</span>
+                  <span class="sc-check">✓</span>
+                </div>
+                <div class="sc" onclick="this.classList.toggle('checked')">
+                  <span class="sc-icon">📦</span>
+                  <span>Food is properly packaged</span>
+                  <span class="sc-check">✓</span>
+                </div>
+              </div>
+            </div>
+            <div class="fg fg-full" style="margin-top:1.5rem">
+              <label for="address">Pickup Address *</label>
+              <div class="input-wrap">
+                <span class="iicon">📍</span>
+                <input type="text" id="address" name="address" placeholder="Enter full address" required />
+              </div>
+            </div>
+            <div class="form-grid" style="margin-top:1rem">
+              <div class="fg">
+                <label>Latitude</label>
+                <div class="input-wrap">
+                  <span class="iicon">🌐</span>
+                  <input type="text" id="latitude" name="latitude" readonly placeholder="Auto-detected" />
+                </div>
+              </div>
+              <div class="fg">
+                <label>Longitude</label>
+                <div class="input-wrap">
+                  <span class="iicon">🌐</span>
+                  <input type="text" id="longitude" name="longitude" readonly placeholder="Auto-detected" />
+                </div>
+              </div>
+            </div>
+            <button type="button" class="btn-locate" onclick="getCurrentLocation()">
+              <span class="locate-pulse"></span>
+              📍 Detect My Location
+            </button>
+            <div class="form-nav" style="margin-top:2rem">
+              <button type="button" class="btn-ghost" onclick="goStep(2)">← Back</button>
+              <button type="submit" class="btn-primary btn-submit">
+                <span class="btn-submit-text">🚀 Submit Donation</span>
+                <span class="btn-submit-loader">⏳</span>
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Donations List ── -->
+  <section id="donations" class="section section-alt">
+    <div class="container">
+      <div class="section-head reveal-up">
+        <div class="section-tag">🔴 Live Feed</div>
+        <h2 class="section-title">Recent Donations</h2>
+        <p class="section-sub">Real-time listing of available food near you.</p>
+      </div>
+      <div class="filter-row reveal-up" style="--d:.1s">
+        <button class="fbtn active" onclick="filterDonations('all',this)">🍽️ All</button>
+        <button class="fbtn" onclick="filterDonations('food',this)">🥗 Food Only</button>
+        <button class="fbtn" onclick="filterDonations('money',this)">💰 With Payment</button>
+      </div>
+      <div id="donationsList" class="donations-grid">
+        <!-- injected by JS -->
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Map ── -->
+  <section id="map" class="section">
+    <div class="container">
+      <div class="section-head reveal-up">
+        <div class="section-tag">🗺️ Live Map</div>
+        <h2 class="section-title">Donation Locations</h2>
+        <p class="section-sub">See where food is available right now.</p>
+      </div>
+      <div id="mapContainer" class="map-container reveal-up" style="--d:.1s"></div>
+    </div>
+  </section>
+
+  <!-- ── About ── -->
+  <section id="about" class="section section-alt">
+    <div class="container">
+      <div class="section-head reveal-up">
+        <div class="section-tag">✨ Our Purpose</div>
+        <h2 class="section-title">About Food for All</h2>
+      </div>
+      <div class="about-grid">
+        <div class="about-card reveal-up" style="--d:.0s">
+          <div class="ac-icon">🎯</div>
+          <h3>Our Mission</h3>
+          <p>Bridge the gap between food surplus and food insecurity through real-time, community-driven redistribution.</p>
+        </div>
+        <div class="about-card reveal-up" style="--d:.12s">
+          <div class="ac-icon">⚡</div>
+          <h3>How It Works</h3>
+          <p>List surplus food → NGOs and volunteers get notified → Food reaches the needy within hours.</p>
+        </div>
+        <div class="about-card reveal-up" style="--d:.24s">
+          <div class="ac-icon">📊</div>
+          <h3>Transparent Impact</h3>
+          <p>Every donation is tracked on a live map with full hygiene verification and delivery confirmation.</p>
+        </div>
+        <div class="about-card reveal-up" style="--d:.36s">
+          <div class="ac-icon">🌍</div>
+          <h3>Scalable Vision</h3>
+          <p>Built for India, designed to scale — from neighborhood restaurants to national food chains.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Footer ── -->
+  <footer class="footer">
+    <div class="container footer-inner">
+      <div class="footer-brand">
+        <span class="logo-icon">🌾</span>
+        <span class="footer-name">Food<em>for</em>All</span>
+        <p>Making a difference, one meal at a time.</p>
+      </div>
+      <div class="footer-links">
+        <a href="#home">Home</a>
+        <a href="#donate">Donate</a>
+        <a href="#map">Map</a>
+        <a href="#about">About</a>
+      </div>
+      <p class="footer-copy">© 2024 Food for All. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <!-- ── Success Modal ── -->
+  <div id="successModal" class="modal-overlay" onclick="closeModal(event)">
+    <div class="modal-box">
+      <div class="modal-confetti" id="confettiArea"></div>
+      <div class="modal-emoji">🎉</div>
+      <h2>Thank You!</h2>
+      <p>Your donation has been listed. <strong>3 NGOs nearby</strong> have been notified.</p>
+      <div class="modal-meta">
+        <div class="mm"><span>Listing ID</span><strong id="listingId">#FRP-0000</strong></div>
+        <div class="mm"><span>Volunteer ETA</span><strong>~12 min</strong></div>
+      </div>
+      <button class="btn-primary" onclick="closeModal()">Back to Platform</button>
+    </div>
+  </div>
+
+  <script>
+
+//    FOOD FOR ALL — ANIMATED SCRIP...
+
+const API_URL = 'http://localhost:3000/api';
+let map;
+let allDonations = [];
+
+// ── Mock donations for demo ──────────────────
+const DEMO_DONATIONS = [
+  { id:1, donorName:'Hotel Grand Spice', foodType:'Cooked Meals', quantity:80, description:'Dal makhani, rice, roti. No allergens.', paymentAmount:500, address:'Connaught Place, New Delhi', latitude:28.6328, longitude:77.2197, donationDate:new Date(Date.now()-12e5).toISOString() },
+  { id:2, donorName:'Fresh Valley Bakery', foodType:'Bakery Items', quantity:45, description:'Bread loaves and croissants.', paymentAmount:0, address:'Saket, New Delhi', latitude:28.5244, longitude:77.2066, donationDate:new Date(Date.now()-36e5).toISOString() },
+  { id:3, donorName:'City Grocery Mart', foodType:'Vegetables', quantity:30, description:'Fresh seasonal vegetables.', paymentAmount:200, address:'Karol Bagh, New Delhi', latitude:28.6519, longitude:77.1909, donationDate:new Date(Date.now()-72e5).toISOString() },
+  { id:4, donorName:'Sunrise Caterers', foodType:'Cooked Meals', quantity:200, description:'Wedding surplus — biryani, paneer, desserts.', paymentAmount:1000, address:'Dwarka, New Delhi', latitude:28.5921, longitude:77.0460, donationDate:new Date(Date.now()-180e3).toISOString() },
+  { id:5, donorName:'Rahul Sharma', foodType:'Packed Food', quantity:15, description:'Sealed snack packets, unused.', paymentAmount:0, address:'Lajpat Nagar, New Delhi', latitude:28.5665, longitude:77.2431, donationDate:new Date(Date.now()-9e5).toISOString() },
+  { id:6, donorName:'Metro Superstore', foodType:'Fruits', quantity:50, description:'Apples, bananas, guava — last-day stock.', paymentAmount:300, address:'Rohini, New Delhi', latitude:28.7041, longitude:77.1025, donationDate:new Date(Date.now()-27e5).toISOString() },
+];
+
+const FOOD_EMOJIS = { 'Cooked Meals':'🍛', 'Bakery Items':'🥖', 'Vegetables':'🥦', 'Fruits':'🍎', 'Packed Food':'📦', 'Snacks':'🍿', default:'🍽️' };
+
+
+// INIT
+document.addEventListener('DOMContentLoaded', () => {
+  initNavbar();
+  initHeroCanvas();
+  initScrollReveal();
+  animateCounters();
+  initMap();
+  loadDonations();
+  setupForm();
+});
+
+// NAVBAR — shrink + link highlight on scroll
+function initNavbar() {
+  const nav = document.getElementById('navbar');
+  const links = document.querySelectorAll('.nl');
+  const sections = ['home','donate','donations','map','about'];
+
+  window.addEventListener('scroll', () => {
+    nav.classList.toggle('scrolled', window.scrollY > 30);
+
+    // Active link
+    let current = '';
+    sections.forEach(id => {
+      const el = document.getElementById(id);
+      if (el && window.scrollY >= el.offsetTop - 120) current = id;
+    });
+    links.forEach(a => {
+      a.classList.toggle('active', a.getAttribute('href') === '#' + current);
+    });
+  }, { passive:true });
+
+  // Burger
+  document.getElementById('burger').addEventListener('click', () => {
+    nav.classList.toggle('menu-open');
+  });
+}
+
+// HERO CANVAS — floating food particles
+function initHeroCanvas() {
+  const canvas = document.getElementById('heroCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  let W, H, particles = [];
+
+  const EMOJIS = ['🍎','🥕','🍞','🥦','🍊','🌽','🍇','🥗','🍅','🫐'];
+
+  function resize() {
+    W = canvas.width = canvas.offsetWidth;
+    H = canvas.height = canvas.offsetHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  function spawn() {
+    return {
+      x: Math.random() * W,
+      y: H + 20,
+      emoji: EMOJIS[Math.floor(Math.random() * EMOJIS.length)],
+      size: 14 + Math.random() * 16,
+      speed: 0.4 + Math.random() * 0.6,
+      drift: (Math.random() - .5) * 0.5,
+      rotation: Math.random() * Math.PI * 2,
+      rotSpeed: (Math.random() - .5) * 0.02,
+      opacity: 0.06 + Math.random() * 0.12,
+    };
+  }
+
+  for (let i = 0; i < 18; i++) {
+    const p = spawn();
+    p.y = Math.random() * H;
+    particles.push(p);
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    particles.forEach(p => {
+      ctx.save();
+      ctx.globalAlpha = p.opacity;
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rotation);
+      ctx.font = `${p.size}px serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(p.emoji, 0, 0);
+      ctx.restore();
+
+      p.y -= p.speed;
+      p.x += p.drift;
+      p.rotation += p.rotSpeed;
+      if (p.y < -30) { Object.assign(p, spawn()); p.x = Math.random() * W; }
+    });
+    requestAnimationFrame(draw);
+  }
+  draw();
+}
+// SCROLL REVEAL
+function initScrollReveal() {
+  const obs = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); obs.unobserve(e.target); } });
+  }, { threshold: 0.12 });
+  document.querySelectorAll('.reveal-up').forEach(el => obs.observe(el));
+}
+
+// COUNTER ANIMATION
+function animateCounters() {
+  const obs = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (!e.isIntersecting) return;
+      const el = e.target;
+      const target = +el.dataset.target;
+      const duration = 1600;
+      const start = performance.now();
+      function step(now) {
+        const p = Math.min((now - start) / duration, 1);
+        const ease = 1 - Math.pow(1 - p, 3);
+        el.textContent = Math.floor(ease * target).toLocaleString('en-IN');
+        if (p < 1) requestAnimationFrame(step);
+      }
+      requestAnimationFrame(step);
+      obs.unobserve(el);
+    });
+  }, { threshold:.5 });
+  document.querySelectorAll('.hs-num[data-target]').forEach(el => obs.observe(el));
+}
+
+// MAP
+function initMap() {
+  map = L.map('mapContainer', { zoomControl:false }).setView([28.6139, 77.2090], 11);
+  L.control.zoom({ position:'bottomright' }).addTo(map);
+
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+    attribution:'&copy; OpenStreetMap &copy; CARTO', maxZoom:19
+  }).addTo(map);
+
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(pos => {
+      map.setView([pos.coords.latitude, pos.coords.longitude], 13);
+      L.circleMarker([pos.coords.latitude, pos.coords.longitude], {
+        radius:10, fillColor:'#2d7a52', color:'#fff', weight:3, fillOpacity:.9
+      }).addTo(map).bindPopup('<strong>📍 You are here</strong>');
+    });
+  }
+}
+
+function updateMap(donations) {
+  if (!map) return;
+  map.eachLayer(l => { if (l instanceof L.Marker || (l instanceof L.CircleMarker && !l._isUser)) map.removeLayer(l); });
+
+  const icon = emoji => L.divIcon({
+    html:`<div style="font-size:20px;width:34px;height:34px;background:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 12px rgba(0,0,0,.2);border:2px solid #2d7a52">${emoji}</div>`,
+    className:'', iconSize:[34,34], iconAnchor:[17,17]
+  });
+
+  donations.forEach(d => {
+    if (!d.latitude || !d.longitude) return;
+    const emoji = FOOD_EMOJIS[d.foodType] || FOOD_EMOJIS.default;
+    L.marker([d.latitude, d.longitude], { icon:icon(emoji) })
+      .addTo(map)
+      .bindPopup(`
+        <div style="font-family:DM Sans,sans-serif;min-width:180px">
+          <strong style="color:#1a5c3a">${d.donorName}</strong><br/>
+          <span style="color:#7a7060;font-size:.85rem">${d.foodType} — ${d.quantity} servings</span>
+          ${d.paymentAmount > 0 ? `<br/><span style="color:#d97706;font-size:.8rem;font-weight:700">💰 ₹${d.paymentAmount}</span>` : ''}
+          <br/><span style="font-size:.75rem;color:#aaa">📅 ${new Date(d.donationDate).toLocaleDateString('en-IN')}</span>
+        </div>
+      `);
+  });
+}
+// FORM — MULTI STEP
+function goStep(n) {
+  document.querySelectorAll('.form-page').forEach(p => p.classList.remove('active'));
+  document.getElementById('fp' + n).classList.add('active');
+
+  document.querySelectorAll('.step').forEach((s, i) => {
+    s.classList.remove('active','done');
+    if (i + 1 < n) s.classList.add('done');
+    if (i + 1 === n) s.classList.add('active');
+    if (s.classList.contains('done')) s.querySelector('.step-num').textContent = '✓';
+    else s.querySelector('.step-num').textContent = i + 1;
+  });
+}
+
+function setupForm() {
+  document.getElementById('donationForm').addEventListener('submit', handleSubmit);
+}
+
+async function handleSubmit(e) {
+  e.preventDefault();
+  const btn = document.querySelector('.btn-submit');
+  btn.classList.add('loading');
+
+  const donation = {
+    donorName: val('donorName'), donorEmail: val('donorEmail'), donorPhone: val('donorPhone'),
+    foodType: val('foodType'), quantity: parseInt(val('quantity')),
+    description: val('description'),
+    paymentAmount: parseFloat(val('paymentAmount')) || 0,
+    paymentMethod: val('paymentMethod') || '',
+    address: val('address'),
+    latitude: parseFloat(val('latitude')) || null,
+    longitude: parseFloat(val('longitude')) || null,
+    donationDate: new Date().toISOString()
+  };
+
+  try {
+    const res = await fetch(`${API_URL}/donations`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(donation)
+    });
+    if (res.ok) { onSuccess(donation); }
+    else { throw new Error('Server error'); }
+  } catch {
+    // Demo mode — add locally
+    donation.id = Date.now();
+    allDonations.unshift(donation);
+    onSuccess(donation);
+  } finally {
+    btn.classList.remove('loading');
+  }
+}
+
+function onSuccess(donation) {
+  document.getElementById('listingId').textContent = '#FRP-' + Math.floor(1000 + Math.random() * 9000);
+  showModal();
+  spawnConfetti();
+  document.getElementById('donationForm').reset();
+  goStep(1);
+  displayDonations(allDonations);
+  updateMap(allDonations);
+}
+
+function val(id) { const el = document.getElementById(id); return el ? el.value : ''; }
+
+// LOAD DONATIONS
+async function loadDonations() {
+  showSkeletons();
+  try {
+    const res = await fetch(`${API_URL}/donations`);
+    const result = await res.json();
+    allDonations = result.data || [];
+  } catch {
+    allDonations = DEMO_DONATIONS; // demo fallback
+  }
+  displayDonations(allDonations);
+  updateMap(allDonations);
+}
+
+function showSkeletons() {
+  const c = document.getElementById('donationsList');
+  c.innerHTML = Array(4).fill(0).map(() => `
+    <div class="donation-card" style="pointer-events:none">
+      <div class="card-header">
+        <div class="skeleton" style="width:44px;height:44px;border-radius:12px;flex-shrink:0"></div>
+        <div style="flex:1">
+          <div class="skeleton" style="width:60%;margin-bottom:8px"></div>
+          <div class="skeleton" style="width:40%;height:14px"></div>
+        </div>
+      </div>
+      <div class="skeleton" style="width:80%;margin-bottom:8px"></div>
+      <div class="skeleton" style="width:55%;height:14px"></div>
+    </div>
+  `).join('');
+}
+
+function displayDonations(donations) {
+  const c = document.getElementById('donationsList');
+  if (!donations.length) {
+    c.innerHTML = `<p style="text-align:center;color:var(--muted);padding:3rem;grid-column:1/-1">No donations yet. Be the first! 🍱</p>`;
+    return;
+  }
+  c.innerHTML = donations.map((d, i) => {
+    const emoji = FOOD_EMOJIS[d.foodType] || FOOD_EMOJIS.default;
+    const daysAgo = Math.floor((Date.now() - new Date(d.donationDate)) / 3600000);
+    const timeLabel = daysAgo < 1 ? 'Just now' : daysAgo < 24 ? `${daysAgo}h ago` : `${Math.floor(daysAgo/24)}d ago`;
+    return `
+    <div class="donation-card reveal-up" style="--d:${i*.06}s;animation-delay:${i*.06}s">
+      <div class="card-header">
+        <div class="card-emoji">${emoji}</div>
+        <div>
+          <div class="card-title">${d.foodType}</div>
+          <div class="card-sub">${d.donorName}</div>
+        </div>
+      </div>
+      <div class="card-tags">
+        <span class="ctag ctag-green">🍽️ ${d.quantity} servings</span>
+        ${d.paymentAmount > 0 ? `<span class="ctag ctag-amber">💰 ₹${d.paymentAmount}</span>` : ''}
+        <span class="ctag ctag-blue">⏱ ${timeLabel}</span>
+      </div>
+      ${d.description ? `<div class="card-meta" style="margin-bottom:6px">📝 ${d.description}</div>` : ''}
+      <div class="card-meta">
+        <span>📍 ${d.address || 'Location not specified'}</span>
+        <span>📅 ${new Date(d.donationDate).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})}</span>
+      </div>
+    </div>`;
+  }).join('');
+  // re-observe new cards
+  document.querySelectorAll('.donation-card.reveal-up:not(.visible)').forEach(el => {
+    setTimeout(() => el.classList.add('visible'), 100);
+  });
+}
+// FILTER
+function filterDonations(type, btn) {
+  document.querySelectorAll('.fbtn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  let filtered = allDonations;
+  if (type === 'food')  filtered = allDonations.filter(d => !d.paymentAmount || d.paymentAmount === 0);
+  if (type === 'money') filtered = allDonations.filter(d => d.paymentAmount > 0);
+  displayDonations(filtered);
+}
+
+// GEOLOCATION
+function getCurrentLocation() {
+  if (!navigator.geolocation) { toast('Geolocation not supported in this browser.', 'error'); return; }
+  const btn = document.querySelector('.btn-locate');
+  btn.textContent = '🔄 Detecting…';
+  btn.disabled = true;
+
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      const { latitude:lat, longitude:lng } = pos.coords;
+      document.getElementById('latitude').value = lat.toFixed(6);
+      document.getElementById('longitude').value = lng.toFixed(6);
+
+      fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`)
+        .then(r => r.json())
+        .then(data => { if (data.display_name) document.getElementById('address').value = data.display_name; })
+        .catch(() => {});
+
+      btn.innerHTML = '<span class="locate-pulse"></span>📍 Location Captured!';
+      btn.style.borderColor = 'var(--green)';
+      btn.disabled = false;
+      toast('📍 Location detected successfully!');
+    },
+    err => {
+      btn.innerHTML = '<span class="locate-pulse"></span>📍 Detect My Location';
+      btn.disabled = false;
+      toast('Could not get location: ' + err.message, 'error');
+    }
+  );
+}
+
+// MODAL
+function showModal() {
+  document.getElementById('successModal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal(e) {
+  if (e && e.target !== document.getElementById('successModal')) return;
+  document.getElementById('successModal').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+// CONFETTI
+function spawnConfetti() {
+  const area = document.getElementById('confettiArea');
+  area.innerHTML = '';
+  const COLORS = ['#f59e0b','#22c55e','#3b82f6','#ef4444','#a855f7','#ec4899','#14b8a6'];
+  for (let i = 0; i < 38; i++) {
+    const el = document.createElement('div');
+    el.className = 'confetti-piece';
+    el.style.cssText = `
+      left:${Math.random()*100}%;
+      background:${COLORS[i % COLORS.length]};
+      width:${6+Math.random()*8}px;
+      height:${6+Math.random()*8}px;
+      border-radius:${Math.random() > .5 ? '50%' : '2px'};
+      animation-delay:${Math.random()*.8}s;
+      animation-duration:${2+Math.random()}s;
+    `;
+    area.appendChild(el);
+  }
+  setTimeout(() => { area.innerHTML = ''; }, 4000);
+}
+
+// TOAST
+function toast(msg, type = 'success') {
+  const t = document.createElement('div');
+  t.style.cssText = `
+    position:fixed;bottom:28px;right:28px;z-index:9999;
+    background:${type === 'error' ? '#dc2626' : '#1a5c3a'};
+    color:#fff;padding:12px 20px;border-radius:12px;
+    font-family:DM Sans,sans-serif;font-size:.9rem;font-weight:600;
+    box-shadow:0 8px 24px rgba(0,0,0,.25);
+    animation:toast-in .35s cubic-bezier(.16,1,.3,1);
+    max-width:320px;
+  `;
+  t.textContent = msg;
+  const style = document.createElement('style');
+  style.textContent = `@keyframes toast-in{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}`;
+  document.head.appendChild(style);
+  document.body.appendChild(t);
+  setTimeout(() => { t.style.opacity = '0'; t.style.transition = 'opacity .3s'; setTimeout(() => t.remove(), 300); }, 3200);
+}
+
+</script>
+</body>
+</html>
